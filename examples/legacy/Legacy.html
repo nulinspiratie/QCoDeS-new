@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Legacy features &mdash; QCoDeS 0.0 documentation</title>
+      <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+        <script src="../../_static/jquery.js"></script>
+        <script src="../../_static/underscore.js"></script>
+        <script src="../../_static/doctools.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+        <script src="https://unpkg.com/@jupyter-widgets/html-manager@^0.20.1/dist/embed-amd.js"></script>
+        <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+        <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="Measure without a Loop" href="Measure%20without%20a%20Loop.html" />
+    <link rel="prev" title="Datasaving Examples" href="Datasaving%20examples.html" />
+    <link href="../../_static/style.css" rel="stylesheet" type="text/css">
+
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../../index.html" class="icon icon-home"> QCoDeS
+          </a>
+              <div class="version">
+                0.0
+              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../start/index.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../15_minutes_to_QCoDeS.html">15 minutes to QCoDeS</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../index.html">Examples of using QCoDeS</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../index.html#basic-examples">Basic examples</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../index.html#parameters">Parameters</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../index.html#dataset">DataSet</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../index.html#plotting">Plotting</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../index.html#drivers">Drivers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../index.html#writing-drivers">Writing Drivers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../index.html#logging">Logging</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../index.html#legacy-examples">Legacy examples</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="Combined%20Parameters.html">Combined Parameters</a></li>
+<li class="toctree-l3"><a class="reference internal" href="Comprehensive%20Plotting%20How-To.html">Comprehensive Plotting How-To</a></li>
+<li class="toctree-l3"><a class="reference internal" href="Datasaving%20examples.html">Datasaving Examples</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Legacy features</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#Overview">Overview</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#Loop">Loop</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#Measure">Measure</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#DataSet">DataSet</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="Measure%20without%20a%20Loop.html">Measure without a Loop</a></li>
+<li class="toctree-l3"><a class="reference internal" href="The%20Location%20Formatter.html">The Location Formatter</a></li>
+<li class="toctree-l3"><a class="reference internal" href="The%20Snapshot.html">The Snapshot</a></li>
+<li class="toctree-l3"><a class="reference internal" href="Tutorial.html">QCoDeS tutorial</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../community/index.html">Community Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../dataset/index.html">DataSet</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/index.html">QCoDes API documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/generated/qcodes.instrument_drivers.html">qcodes.instrument_drivers package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../changes/index.html">Changelogs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../help.html">Get Help</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">QCoDeS</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="../index.html">Examples of using QCoDeS</a> &raquo;</li>
+      <li>Legacy features</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../_sources/examples/legacy/Legacy.ipynb.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  
+<style>
+/* CSS for nbsphinx extension */
+
+/* remove conflicting styling from Sphinx themes */
+div.nbinput.container div.prompt *,
+div.nboutput.container div.prompt *,
+div.nbinput.container div.input_area pre,
+div.nboutput.container div.output_area pre,
+div.nbinput.container div.input_area .highlight,
+div.nboutput.container div.output_area .highlight {
+    border: none;
+    padding: 0;
+    margin: 0;
+    box-shadow: none;
+}
+
+div.nbinput.container > div[class*=highlight],
+div.nboutput.container > div[class*=highlight] {
+    margin: 0;
+}
+
+div.nbinput.container div.prompt *,
+div.nboutput.container div.prompt * {
+    background: none;
+}
+
+div.nboutput.container div.output_area .highlight,
+div.nboutput.container div.output_area pre {
+    background: unset;
+}
+
+div.nboutput.container div.output_area div.highlight {
+    color: unset;  /* override Pygments text color */
+}
+
+/* avoid gaps between output lines */
+div.nboutput.container div[class*=highlight] pre {
+    line-height: normal;
+}
+
+/* input/output containers */
+div.nbinput.container,
+div.nboutput.container {
+    display: -webkit-flex;
+    display: flex;
+    align-items: flex-start;
+    margin: 0;
+    width: 100%;
+}
+@media (max-width: 540px) {
+    div.nbinput.container,
+    div.nboutput.container {
+        flex-direction: column;
+    }
+}
+
+/* input container */
+div.nbinput.container {
+    padding-top: 5px;
+}
+
+/* last container */
+div.nblast.container {
+    padding-bottom: 5px;
+}
+
+/* input prompt */
+div.nbinput.container div.prompt pre {
+    color: #307FC1;
+}
+
+/* output prompt */
+div.nboutput.container div.prompt pre {
+    color: #BF5B3D;
+}
+
+/* all prompts */
+div.nbinput.container div.prompt,
+div.nboutput.container div.prompt {
+    width: 4.5ex;
+    padding-top: 5px;
+    position: relative;
+    user-select: none;
+}
+
+div.nbinput.container div.prompt > div,
+div.nboutput.container div.prompt > div {
+    position: absolute;
+    right: 0;
+    margin-right: 0.3ex;
+}
+
+@media (max-width: 540px) {
+    div.nbinput.container div.prompt,
+    div.nboutput.container div.prompt {
+        width: unset;
+        text-align: left;
+        padding: 0.4em;
+    }
+    div.nboutput.container div.prompt.empty {
+        padding: 0;
+    }
+
+    div.nbinput.container div.prompt > div,
+    div.nboutput.container div.prompt > div {
+        position: unset;
+    }
+}
+
+/* disable scrollbars on prompts */
+div.nbinput.container div.prompt pre,
+div.nboutput.container div.prompt pre {
+    overflow: hidden;
+}
+
+/* input/output area */
+div.nbinput.container div.input_area,
+div.nboutput.container div.output_area {
+    -webkit-flex: 1;
+    flex: 1;
+    overflow: auto;
+}
+@media (max-width: 540px) {
+    div.nbinput.container div.input_area,
+    div.nboutput.container div.output_area {
+        width: 100%;
+    }
+}
+
+/* input area */
+div.nbinput.container div.input_area {
+    border: 1px solid #e0e0e0;
+    border-radius: 2px;
+    /*background: #f5f5f5;*/
+}
+
+/* override MathJax center alignment in output cells */
+div.nboutput.container div[class*=MathJax] {
+    text-align: left !important;
+}
+
+/* override sphinx.ext.imgmath center alignment in output cells */
+div.nboutput.container div.math p {
+    text-align: left;
+}
+
+/* standard error */
+div.nboutput.container div.output_area.stderr {
+    background: #fdd;
+}
+
+/* ANSI colors */
+.ansi-black-fg { color: #3E424D; }
+.ansi-black-bg { background-color: #3E424D; }
+.ansi-black-intense-fg { color: #282C36; }
+.ansi-black-intense-bg { background-color: #282C36; }
+.ansi-red-fg { color: #E75C58; }
+.ansi-red-bg { background-color: #E75C58; }
+.ansi-red-intense-fg { color: #B22B31; }
+.ansi-red-intense-bg { background-color: #B22B31; }
+.ansi-green-fg { color: #00A250; }
+.ansi-green-bg { background-color: #00A250; }
+.ansi-green-intense-fg { color: #007427; }
+.ansi-green-intense-bg { background-color: #007427; }
+.ansi-yellow-fg { color: #DDB62B; }
+.ansi-yellow-bg { background-color: #DDB62B; }
+.ansi-yellow-intense-fg { color: #B27D12; }
+.ansi-yellow-intense-bg { background-color: #B27D12; }
+.ansi-blue-fg { color: #208FFB; }
+.ansi-blue-bg { background-color: #208FFB; }
+.ansi-blue-intense-fg { color: #0065CA; }
+.ansi-blue-intense-bg { background-color: #0065CA; }
+.ansi-magenta-fg { color: #D160C4; }
+.ansi-magenta-bg { background-color: #D160C4; }
+.ansi-magenta-intense-fg { color: #A03196; }
+.ansi-magenta-intense-bg { background-color: #A03196; }
+.ansi-cyan-fg { color: #60C6C8; }
+.ansi-cyan-bg { background-color: #60C6C8; }
+.ansi-cyan-intense-fg { color: #258F8F; }
+.ansi-cyan-intense-bg { background-color: #258F8F; }
+.ansi-white-fg { color: #C5C1B4; }
+.ansi-white-bg { background-color: #C5C1B4; }
+.ansi-white-intense-fg { color: #A1A6B2; }
+.ansi-white-intense-bg { background-color: #A1A6B2; }
+
+.ansi-default-inverse-fg { color: #FFFFFF; }
+.ansi-default-inverse-bg { background-color: #000000; }
+
+.ansi-bold { font-weight: bold; }
+.ansi-underline { text-decoration: underline; }
+
+
+div.nbinput.container div.input_area div[class*=highlight] > pre,
+div.nboutput.container div.output_area div[class*=highlight] > pre,
+div.nboutput.container div.output_area div[class*=highlight].math,
+div.nboutput.container div.output_area.rendered_html,
+div.nboutput.container div.output_area > div.output_javascript,
+div.nboutput.container div.output_area:not(.rendered_html) > img{
+    padding: 5px;
+    margin: 0;
+}
+
+/* fix copybtn overflow problem in chromium (needed for 'sphinx_copybutton') */
+div.nbinput.container div.input_area > div[class^='highlight'],
+div.nboutput.container div.output_area > div[class^='highlight']{
+    overflow-y: hidden;
+}
+
+/* hide copybtn icon on prompts (needed for 'sphinx_copybutton') */
+.prompt .copybtn {
+    display: none;
+}
+
+/* Some additional styling taken form the Jupyter notebook CSS */
+div.rendered_html table {
+  border: none;
+  border-collapse: collapse;
+  border-spacing: 0;
+  color: black;
+  font-size: 12px;
+  table-layout: fixed;
+}
+div.rendered_html thead {
+  border-bottom: 1px solid black;
+  vertical-align: bottom;
+}
+div.rendered_html tr,
+div.rendered_html th,
+div.rendered_html td {
+  text-align: right;
+  vertical-align: middle;
+  padding: 0.5em 0.5em;
+  line-height: normal;
+  white-space: normal;
+  max-width: none;
+  border: none;
+}
+div.rendered_html th {
+  font-weight: bold;
+}
+div.rendered_html tbody tr:nth-child(odd) {
+  background: #f5f5f5;
+}
+div.rendered_html tbody tr:hover {
+  background: rgba(66, 165, 245, 0.2);
+}
+
+/* CSS overrides for sphinx_rtd_theme */
+
+/* 24px margin */
+.nbinput.nblast.container,
+.nboutput.nblast.container {
+    margin-bottom: 19px;  /* padding has already 5px */
+}
+
+/* ... except between code cells! */
+.nblast.container + .nbinput.container {
+    margin-top: -19px;
+}
+
+.admonition > p:before {
+    margin-right: 4px;  /* make room for the exclamation icon */
+}
+
+/* Fix math alignment, see https://github.com/rtfd/sphinx_rtd_theme/pull/686 */
+.math {
+    text-align: unset;
+}
+</style>
+<div class="admonition note">
+  <p>This page was generated from
+    <a class="reference external"
+    href="https://github.com/qcodes/qcodes/blob/master/docs/examples/legacy/Legacy.ipynb">docs/examples/legacy/Legacy.ipynb</a>.
+    Interactive online version:
+    <a href="https://mybinder.org/v2/gh/qcodes/qcodes/master?filepath=docs/examples/legacy/Legacy.ipynb"><img
+alt="Binder badge"
+    src="https://mybinder.org/badge_logo.svg"
+    style="vertical-align:text-bottom"></a>.
+  </p>
+  <script>
+    if (document.location.host) {
+      var p = document.currentScript.previousSibling.previousSibling;
+      var a = document.createElement('a');
+      a.innerHTML = 'View in <em>nbviewer</em>';
+      a.href = `https://nbviewer.jupyter.org/url${
+        (window.location.protocol == 'https:' ? 's/' : '/') +
+        window.location.host +
+        window.location.pathname.slice(0, -4) }ipynb`;
+      a.classList.add('reference');
+      a.classList.add('external');
+      p.appendChild(a);
+      p.appendChild(document.createTextNode('.'));
+    }
+  </script>
+</div><section id="Legacy-features">
+<h1>Legacy features<a class="headerlink" href="#Legacy-features" title="Permalink to this headline"></a></h1>
+<p>This section describes legacy features from early implementations of QCoDeS. As new features often use similar (or identical) names and achieve similar goals, these older implementations have been laid to rest in these example notebooks. The intent of preserving this data is twofold: first to preserve documentation for users still relient on these systems, and second to better understand these older implementations should their code be revisted.</p>
+<p>In addition to the information here, we aim to provide links to sections of documentation where updated information can be found, this is intended to assist early users in transitioning to newer features.</p>
+<section id="Overview">
+<h2>Overview<a class="headerlink" href="#Overview" title="Permalink to this headline"></a></h2>
+<p>A QCoDeS experiment typically consists of a Loop that sweeps over one or more Parameters of one or more Instruments, measures other Parameters at each sweep point, and stores all of the results into a DataSet.</p>
+<p>While the simple case is quite straightforward, it is possible to create a very general experiment by defining richer Parameters and by performing additional Loop actions at each sweep point. The overview on this page provides a high-level picture of the general capabilities; consult the detailed API references and the samples to see some of the complex procedures that can be described and run.</p>
+</section>
+<section id="Loop">
+<h2>Loop<a class="headerlink" href="#Loop" title="Permalink to this headline"></a></h2>
+<p>A Loop is the QCoDeS way to acquire one or more arrays of data. Every Loop that’s executed consists of a settable Parameter to be varied, some collection of values to set it to, some actions to do at each setpoint, and some conditions by which to run the Loop.</p>
+<p>An action can be: - A gettable Parameter (something to measure). Each such Parameter will generate one (or more, if the Parameter itself creates multiple outputs). - A Task to do (for example you measure once, then have a Task to change a gate voltage, then you measure again, and finally a Task to put the gate voltage back where it was). - Wait, a specialized task that just delays execution (but may do other things like monitoring the system in that time) - BreakIf, a callable test for whether
+to quit (this level of) the Loop.</p>
+<p>Another Loop nested inside the first, with all its own setpoints and actions. Measurements within a nested loop will produce a higher-dimension output array.</p>
+<p>The key loop running conditions are: - background or not: A background Loop runs in its own separate process, so that you can be doing things in the main process like live plotting, analysis on the data as it arrives, preparing for the next measurement, or even unrelated tasks, while the Loop is running. The disadvantage is complexity, in that you can only use RemoteInstruments, and debugging gets much harder. - use threads: If true, we will group measurement actions and try to execute them
+concurrently across several threads. This can dramatically speed up slow measurements involving several instruments, or all instruments are local. - data manager: If not False, we create another extra process whose job it is to offload data storage, and sync data back to the main process on demand, so that the Loop process can run with as little overhead as possible.</p>
+<section id="Responsibilities:">
+<h3>Responsibilities:<a class="headerlink" href="#Responsibilities:" title="Permalink to this headline"></a></h3>
+<ul class="simple">
+<li><p>creating the dataset that will be needed to store its data</p></li>
+<li><p>where and how to save the data to disk</p></li>
+<li><p>generating all the metadata for the DataSet.</p></li>
+</ul>
+<blockquote>
+<div><p>Metadata is intended to describe the system and software configuration to give it context, help reproduce and troubleshoot the experiment, and to aid searching and datamining later. The Loop generates its own metadata, regarding when and how it was run and the Parameters and other actions involved, as well as asking all the Instruments, via a qcodes.station if possible, for their own metadata and including it.</p>
+</div></blockquote>
+<ul class="simple">
+<li><p>sequencing actions: the Loop should have the highest priority and the least overhead of extra responsibilities so that setpoints and actions occur with as fast and reliable timing as possible.</p></li>
+</ul>
+<p>Before the Loop is run, it holds the setpoint and action definitions you are building up. You can actually keep a loop at any level of definition and reuse it later. Loop methods chain by creating entirely new objects, so that you can hold onto the Loop at any stage of definition and reuse just what has been defined up to that point.</p>
+<p>After the Loop is run, it returns a dataset and the executed loop itself, along with the process it starts if it’s a background Loop, only hold state (such as the current indices within the potentially nested Loops) while it is running.</p>
+</section>
+<section id="Loops-can-fail:">
+<h3>Loops can fail:<a class="headerlink" href="#Loops-can-fail:" title="Permalink to this headline"></a></h3>
+<p>If you try to use a (parameter of a) local instrument in a background loop</p>
+</section>
+</section>
+<section id="Measure">
+<h2>Measure<a class="headerlink" href="#Measure" title="Permalink to this headline"></a></h2>
+<p>If you want to create a dataset without running a loop - for example, from a single Parameter.get() that returns one or more whole arrays - you can use Measure. Measure works very similarly to Loop, accepting all the same action types. The API for running a Measure is also very similar to Loop, with the difference that Measure does not allow background acquisition.</p>
+<p>If any of the actions return scalars, these will be entered in the DataSet as 1D length-1 arrays, along with a similar length-1 setpoint array.</p>
+<p>Just like a Loop, you can hold a Measure object, with its list of actions to execute, and reuse it multiple times.</p>
+</section>
+<section id="DataSet">
+<h2>DataSet<a class="headerlink" href="#DataSet" title="Permalink to this headline"></a></h2>
+<p>A DataSet is a way to group arrays of data together, describe the meaning of each and their relationships to each other, and record metadata.</p>
+<p>Typically a DataSet is the result of running a single Loop, and contains all the data generated by the Loop as well as all the metadata necessary to understand and repeat it.</p>
+<p>The data in a DataSet is stored in one or more DataArray objects, each of which is a single numpy ndarray (wrapped with some extra functionality and attributes). The metadata is stored in a JSON-compatible dictionary structure.</p>
+<p>A DataArray with N dimensions should list N setpoint arrays, each of which is also a DataArray in the same DataSet. The first setpoint array should have 1 dimension, the second 2 dimensions, etc. This follows the procedure of most experimental loops, where the outer loop parameter only changes when you increment the outer loop.</p>
+<p>If your loop does not work this way, and the setpoint of the first index changes with the second index, you should either use an array of integers as the outer setpoints, and treat your varying indices as a separate measured array, or you may prefer to store all of the setpoints and measurements as 1D arrays, where each index represents one condition across all arrays, akin to an SQL table (where each array would represent one column of the table).</p>
+<p>One DataArray can only be part of at most one DataSet. This ensures that we don’t generate irreversible situations by saving an array in multiple places and reloading them separately, or conflicts if we try to sync (or reload) several DataSets with inconsistent data in the multiply-referenced arrays, and that we can always refer from the DataArray to a single DataSet, which is important for live plotting.</p>
+<p>The DataSet also specifies where and how it is to be stored on disk. Storage is specified by an io_manager (the physical device / protocol, and base location in the normal case of disk storage), a location (string, relative path within the io manager), and formatter (specifies the file type and how to read to and write from a DataSet).</p>
+<section id="responsibilities-1">
+<span id="id1"></span><h3>Responsibilities:<a class="headerlink" href="#responsibilities-1" title="Permalink to this headline"></a></h3>
+<p>Accepting incremental pieces of data (setpoints and measurements as they become available)</p>
+<p>Either holding that data locally (within its DataArrays), or pushing it to another copy of itself that stores it</p>
+<p>If it’s a copy that holds data, each DataArray maintains a record of the range of indices that have changed since the last save to storage, the last index that has been saved, and (if it’s in PULL_FROM_SERVER mode) the last index that has been synced from the server. This implicitly assumes that the DataArrays are filled in order of the raveled indices, ie looping over the inner index first.</p>
+<p>It’s up to the Formatter to look at each of these DataArrays, decide what parts of the changes in each to save to storage, and then tell each DataArray what it saved (expressed as a greatest raveled index). With that information the DataArray updates its record of what still needs saving. This is done so that a Formatter can choose to combine several DataArrays into one table, which may require writing only the values at array positions which have been finished in all of these arrays.</p>
+<p>Each DataSet holds:</p>
+<ul class="simple">
+<li><p>Its own metadata (JSON-compatible dict, i.e., everything that the custom JSON encoder class qcodes.utils.helpers.NumpyJSONEncoder supports.)</p></li>
+<li><p>Its mode (PUSH_TO_SERVER, PULL_FROM_SERVER, LOCAL)</p></li>
+<li><p>A dict of DataArrays, each with attributes: name (which is also its dictionary key in DataSet.arrays), label, units, setpoints. If the DataSet is in PUSH_TO_SERVER mode, these DataArrays do not hold any data. Otherwise, these DataArrays contain numpy arrays of data, as well as records (as described above) of what parts of that array have been changed, saved, and synced.</p></li>
+<li><p>location, formatter, and io manager</p></li>
+</ul>
+</section>
+<section id="DataSets-can-fail:">
+<h3>DataSets can fail:<a class="headerlink" href="#DataSets-can-fail:" title="Permalink to this headline"></a></h3>
+<p>If somehow the data in storage does not match the record in memory of what it has saved, for example if you change the stored file during acquisition. The consequences depend on the formatter (this could be completely destructive for GNUPlotFormat or other text-based formats, probably less so for HDF5) but in general the DataSet has no way of independently checking that the existing data on disk is still what it thinks it is. A safe but slow way around this is to rewrite the stored files
+completely</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>
+</pre></div>
+</div>
+</div>
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="Datasaving%20examples.html" class="btn btn-neutral float-left" title="Datasaving Examples" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="Measure%20without%20a%20Loop.html" class="btn btn-neutral float-right" title="Measure without a Loop" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p></p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
