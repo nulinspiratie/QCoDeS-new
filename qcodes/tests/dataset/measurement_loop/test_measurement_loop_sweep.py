@@ -47,27 +47,6 @@ def test_sweep_2_args_parameter_sequence():
     assert sweep.parameter == sweep_parameter
 
 
-def test_sweep_2_args_parameter_stop():
-    sweep_parameter = ManualParameter("sweep_parameter")
-
-    # No initial value
-    with pytest.raises(ValueError):
-        sweep = Sweep(sweep_parameter, 10)
-    with pytest.raises(ValueError):
-        sweep = Sweep(sweep_parameter, 10, num=21)
-
-    sweep_parameter(0)
-    with pytest.raises(SyntaxError):
-        sweep = Sweep(sweep_parameter, 10)
-
-    sweep = Sweep(sweep_parameter, 10, num=21)
-    assert np.allclose(sweep.sequence, np.linspace(0, 10, 21))
-
-    sweep_parameter.sweep_defaults = {"num": 21}
-    sweep = Sweep(sweep_parameter, 10)
-    assert np.allclose(sweep.sequence, np.linspace(0, 10, 21))
-
-
 def test_sweep_2_args_sequence_name():
     sweep_values = [1, 2, 3]
     with pytest.raises(AssertionError):
