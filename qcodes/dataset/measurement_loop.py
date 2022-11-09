@@ -48,8 +48,7 @@ class _DatasetHandler:
     Used by the `MeasurementLoop` as an interface to the `Measurement` and `DataSet`
     """
 
-    def __init__(self, measurement_loop: "MeasurementLoop", name: str = "results"):
-        self.measurement_loop = measurement_loop
+    def __init__(self, name: str = "results"):
         self.name = name
 
         self.initialized: bool = False
@@ -147,6 +146,7 @@ class _DatasetHandler:
     def create_measurement_info(
         self,
         action_indices: Tuple[int],
+        loop_shape: Tuple[int],
         parameter: Parameter,
         name: Optional[str] = None,
         label: Optional[str] = None,
@@ -185,7 +185,7 @@ class _DatasetHandler:
         measurement_info = {
             "parameter": parameter,
             "setpoints_action_indices": setpoints_action_indices,
-            "shape": self.measurement_loop.loop_shape,
+            "shape": loop_shape,
             "unstored_results": [],
             "registered": False,
         }
@@ -195,6 +195,7 @@ class _DatasetHandler:
     def register_new_measurement(
         self,
         action_indices: Tuple[int],
+        loop_shape: Tuple[int],
         parameter: _BaseParameter,
         name: Optional[str] = None,
         label: Optional[str] = None,
@@ -203,6 +204,7 @@ class _DatasetHandler:
         """Register a new measurement parameter"""
         measurement_info = self.create_measurement_info(
             action_indices=action_indices,
+            loop_shape=loop_shape,
             parameter=parameter,
             name=name,
             label=label,
@@ -216,6 +218,7 @@ class _DatasetHandler:
     def add_measurement_result(
         self,
         action_indices: Tuple[int],
+        loop_shape: Tuple[int],
         result: Union[float, int, bool],
         parameter: _BaseParameter = None,
         name: Optional[str] = None,
@@ -237,6 +240,7 @@ class _DatasetHandler:
         if action_indices not in self.measurement_list:
             self.register_new_measurement(
                 action_indices=action_indices,
+                loop_shape=loop_shape,
                 parameter=parameter,
                 name=name,
                 label=label,
@@ -498,9 +502,7 @@ class MeasurementLoop:
                 MeasurementLoop.measurement_thread = threading.current_thread()
 
                 # Initialize dataset handler
-                self.data_handler = _DatasetHandler(
-                    measurement_loop=self, name=self.name
-                )
+                self.data_handler = _DatasetHandler(name=self.name)
 
                 # TODO incorporate metadata
                 # self._initialize_metadata(self.dataset)
@@ -844,6 +846,7 @@ class MeasurementLoop:
 
         self.data_handler.add_measurement_result(
             action_indices=self.action_indices,
+            loop_shape=self.loop_shape,
             result=result,
             parameter=parameter,
             name=name,
@@ -1009,6 +1012,7 @@ class MeasurementLoop:
         result = value
         self.data_handler.add_measurement_result(
             action_indices=self.action_indices,
+            loop_shape=self.loop_shape,
             result=result,
             parameter=parameter,
             name=name,
@@ -1027,6 +1031,7 @@ class MeasurementLoop:
         label: Optional[str] = None,
         unit: Optional[str] = None,
         timestamp: bool = False,
+        thread=False,
         **kwargs,
     ) -> Any:
         """Perform a single measurement of a Parameter, function, etc.
@@ -1048,6 +1053,7 @@ class MeasurementLoop:
             unit: Optional unit, is ignored if measurable is a Parameter or callable
             timestamp: If True, the timestamps immediately before and after this
                        measurement are recorded
+            thread: Perform measurement in thread (don't need to wait for it to finish)
 
         Returns:
             Return value of measurable
