@@ -84,7 +84,10 @@ class _DatasetHandler:
         self.measurement = Measurement(name=self.name)
 
         # Create measurement Runner
-        self.runner = self.measurement.run(allow_empty_dataset=True)
+        self.runner = self.measurement.run(
+            allow_empty_dataset=True, 
+            write_in_background=True
+        )
 
         # Create measurement Dataset
         self.datasaver = self.runner.__enter__()
@@ -436,6 +439,8 @@ class MeasurementLoop:
 
         self.timings: PerformanceTimer = PerformanceTimer()
 
+        self._threaded_measurements = []
+
     @property
     def dataset(self) -> DataSetProtocol:
         if self.data_handler is None:
@@ -565,6 +570,10 @@ class MeasurementLoop:
         """
         msmt = MeasurementLoop.running_measurement
         if msmt is self:
+            # Wait until all threaded measurements are complete
+            while [t for t in self._threaded_measurements if t.is_alive()]:
+                sleep(0.1)
+
             # Immediately unregister measurement as main measurement, in case
             # an error occurs during final actions.
             MeasurementLoop.running_measurement = None
@@ -646,7 +655,7 @@ class MeasurementLoop:
     #         )
 
     def _verify_action(
-        self, action: Callable, name: str, add_if_new: bool = True
+        self, action: Callable, name: str = None, add_if_new: bool = True
     ) -> None:
         """Verify an action corresponds to the current action indices.
 
@@ -654,6 +663,7 @@ class MeasurementLoop:
 
         Args:
             action: Action that is supposed to be performed at these action_indices
+            name: Name of action to be checked, doesn't need to be set.
             add_if_new: Register action if the action_indices have not yet been registered
 
         Raises:
@@ -666,7 +676,7 @@ class MeasurementLoop:
                 # Add current action to action registry
                 self.actions[self.action_indices] = action
                 self.action_names[self.action_indices] = name
-        elif name != self.action_names[self.action_indices]:
+        elif name is not None and name != self.action_names[self.action_indices]:
             raise RuntimeError(
                 f"Wrong measurement at action_indices {self.action_indices}. "
                 f"Expected: {self.action_names[self.action_indices]}. Received: {name}"
@@ -812,6 +822,8 @@ class MeasurementLoop:
     def _measure_parameter(
         self,
         parameter: _BaseParameter,
+        action_indices: Tuple[int],
+        loop_shape: Tuple[int],
         name: Optional[str] = None,
         label: Optional[str] = None,
         unit: Optional[str] = None,
@@ -824,6 +836,8 @@ class MeasurementLoop:
 
         Args:
             parameter: Parameter to be measured
+            action_indices: Should equal MeasurementLoop.action_indices
+            loop_shape: Should equal MeasurementLoop.loop_shape
             name: Name used to measure parameter, overriding ``parameter.name``
             label: Label used to measure parameter, overriding ``parameter.label``
             unit: Unit used to measure parameter, overriding ``parameter.unit``
@@ -857,14 +871,21 @@ class MeasurementLoop:
         return result
 
     def _measure_multi_parameter(
-        self, multi_parameter: MultiParameter, name: str = None, **kwargs
+        self, 
+        multi_parameter: MultiParameter, 
+        action_indices: Tuple[int],
+        loop_shape: Tuple[int],
+        name: str = None, 
+        **kwargs,
     ) -> Any:
         """Measure MultiParameter and store results
 
         Called from `measure`
 
         Args:
-            parameter: Parameter to be measured
+            multi_parameter: Parameter to be measured
+            action_indices: Should equal MeasurementLoop.action_indices
+            loop_shape: Should equal MeasurementLoop.loop_shape
             name: Name used to measure parameter, overriding ``parameter.name``
             **kwargs: optional kwargs passed to parameter, i.e. ``parameter(**kwargs)``
 
@@ -895,12 +916,18 @@ class MeasurementLoop:
                     parameter=multi_parameter,
                     label=multi_parameter.labels[k],
                     unit=multi_parameter.units[k],
+                    action_indices=action_indices,
+                    loop_shape=loop_shape,
                 )
 
         return results
 
     def _measure_callable(
-        self, measurable_function: Callable, name: str = None, **kwargs
+        self, 
+        measurable_function: Callable, 
+        action_indices: Tuple[int],
+        loop_shape: Tuple[int],
+        **kwargs
     ) -> Dict[str, Any]:
         """Measure a callable (function) and store results
 
@@ -909,23 +936,14 @@ class MeasurementLoop:
         values aren't stored.
 
         Args:
-            name: Dataset name used for function. Extracts name from function if not provided
+            measurable_function: Function to be measured, should return dict
+            action_indices: Should equal MeasurementLoop.action_indices
+            loop_shape: Should equal MeasurementLoop.loop_shape
             **kwargs: optional kwargs passed to callable, i.e. ``callable(**kwargs)``
         """
-        # Determine name
-        if name is None:
-            if hasattr(measurable_function, "__self__") and isinstance(
-                measurable_function.__self__, InstrumentBase
-            ):
-                name = measurable_function.__self__.name
-            elif hasattr(measurable_function, "__name__"):
-                name = measurable_function.__name__
-            else:
-                action_indices_str = "_".join(str(idx) for idx in self.action_indices)
-                name = f"data_group_{action_indices_str}"
 
         # Ensure measuring callable matches the current action_indices
-        self._verify_action(action=measurable_function, name=name, add_if_new=True)
+        self._verify_action(action=measurable_function, add_if_new=True)
 
         # Record action_indices before the callable is called
         action_indices = self.action_indices
@@ -943,13 +961,23 @@ class MeasurementLoop:
             if not isinstance(results, dict):
                 raise SyntaxError(f"{name} results must be a dict, not {results}")
 
-            with MeasurementLoop(name) as msmt:
-                for key, val in results.items():
-                    msmt.measure(val, name=key)
+
+            for k, (key, val) in enumerate(results.items()):
+                msmt.measure(
+                    val, 
+                    name=key, 
+                    action_indices=tuple(*action_indices, k), 
+                    loop_shape=loop_shape,
+                )
 
         return results
 
-    def _measure_dict(self, value: dict, name: str) -> Dict[str, Any]:
+    def _measure_dict(
+        self, 
+        value: dict, 
+        action_indices: Tuple[int],
+        loop_shape: Tuple[int],
+    ) -> Dict[str, Any]:
         """Store dictionary results
 
         Each key is an array name, and the value is the value to store
@@ -962,15 +990,16 @@ class MeasurementLoop:
         if not isinstance(value, dict):
             raise SyntaxError(f"{name} must be a dict, not {value}")
 
-        if not isinstance(name, str) or name == "":
-            raise SyntaxError(f"Dict result {name} must have a valid name: {value}")
-
         # Ensure measuring callable matches the current action_indices
-        self._verify_action(action=None, name=name, add_if_new=True)
+        self._verify_action(action=None, add_if_new=True)
 
-        with MeasurementLoop(name) as msmt:
-            for key, val in value.items():
-                msmt.measure(val, name=key)
+        for key, val in value.items():
+            msmt.measure(
+                val, 
+                name=key,
+                action_indices=tuple(*action_indices),
+                loop_shape=loop_shape,
+            )
 
         return value
 
@@ -978,6 +1007,8 @@ class MeasurementLoop:
         self,
         value: Union[float, int, bool],
         name: str,
+        action_indices: Tuple[int],
+        loop_shape: Tuple[int],
         parameter: Optional[_BaseParameter] = None,
         label: Optional[str] = None,
         unit: Optional[str] = None,
@@ -1011,8 +1042,8 @@ class MeasurementLoop:
 
         result = value
         self.data_handler.add_measurement_result(
-            action_indices=self.action_indices,
-            loop_shape=self.loop_shape,
+            action_indices=action_indices,
+            loop_shape=loop_shape,
             result=result,
             parameter=parameter,
             name=name,
@@ -1065,18 +1096,47 @@ class MeasurementLoop:
             )
         if self.is_stopped:
             raise SystemExit("Measurement.stop() has been called")
-        if threading.current_thread() is not MeasurementLoop.measurement_thread:
-            raise RuntimeError(
-                "Cannot measure while another measurement is already running "
-                "in a different thread."
+
+        # We take action indices and loop shape from kwargs.
+        # Note that I don't make them explicit kwargs because the user shouldn't see them.
+        action_indices = kwargs.pop('action_indices', self.action_indices)
+        loop_shape = kwargs.pop('loop_shape', self.loop_shape)
+
+        if thread:
+            # Update existing list of threaded measurements
+            self._threaded_measurements = [t for t in self._threaded_measurements if t.is_alive()]
+
+            # Create new thread for measurement
+            t = threading.Thread(
+                target=self.measure, 
+                kwargs=dict(
+                    measurable=measurable,
+                    name=name,
+                    label=label,
+                    unit=unit,
+                    timestamp=timestamp,
+                    thread=False,
+                    action_indices=self.action_indices,  # Add action_indices
+                    loop_shape=self.loop_shape,  # Add loop_shape
+                    **kwargs,
+                )
             )
+            t.start()
+            self._threaded_measurements.append(t)
+            return
 
         if self != MeasurementLoop.running_measurement:
             # Since this Measurement is not the running measurement, it is a
             # DataGroup in the running measurement. Delegate measurement to the
             # running measurement
             return MeasurementLoop.running_measurement.measure(
-                measurable, name=name, label=label, unit=unit, **kwargs
+                measurable, 
+                name=name, 
+                label=label, 
+                unit=unit, 
+                action_indices=action_indices,
+                loop_shape=loop_shape,
+                **kwargs
             )
 
         # Code from hereon is only reached by the primary measurement,
@@ -1105,18 +1165,47 @@ class MeasurementLoop:
         # TODO Incorporate kwargs name, label, and unit, into each of these
         if isinstance(measurable, Parameter):
             result = self._measure_parameter(
-                measurable, name=name, label=label, unit=unit, **kwargs
+                measurable, 
+                name=name, 
+                label=label, 
+                unit=unit, 
+                action_indices=action_indices,
+                loop_shape=loop_shape,
+                **kwargs,
             )
             self.skip()  # Increment last action index by 1
         elif isinstance(measurable, MultiParameter):
-            result = self._measure_multi_parameter(measurable, name=name, **kwargs)
+            result = self._measure_multi_parameter(
+                measurable, 
+                name=name, 
+                action_indices=action_indices,
+                loop_shape=loop_shape,
+                **kwargs
+            )
         elif callable(measurable):
-            result = self._measure_callable(measurable, name=name, **kwargs)
+            result = self._measure_callable(
+                measurable, 
+                name=name, 
+                action_indices=action_indices,
+                loop_shape=loop_shape,
+                **kwargs
+            )
         elif isinstance(measurable, dict):
-            result = self._measure_dict(measurable, name=name)
+            result = self._measure_dict(
+                measurable, 
+                action_indices=action_indices,
+                loop_shape=loop_shape,
+                name=name
+            )
         elif isinstance(measurable, RAW_VALUE_TYPES):
             result = self._measure_value(
-                measurable, name=name, label=label, unit=unit, **kwargs
+                measurable, 
+                name=name, 
+                label=label, 
+                unit=unit, 
+                action_indices=action_indices,
+                loop_shape=loop_shape,
+                **kwargs,
             )
             self.skip()  # Increment last action index by 1
         else:

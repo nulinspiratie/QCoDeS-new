@@ -264,3 +264,31 @@ def test_fraction_complete():
             # print(f'{msmt.fraction_complete(silent=False)=}')
             print(f'{msmt.fraction_complete(silent=-1)=}')
             assert msmt.fraction_complete() == round(0.5 + 0.05 * (k+1), 3)
+
+
+@pytest.mark.usefixtures("empty_temp_db", "experiment")
+def test_measurement_threaded_sweep():
+    def delayed_get(delay=0.1, return_val=42):
+        sleep(delay)
+        return return_val
+
+    delayed_param = Parameter('delayed_param', get_cmd=delayed_get)
+
+    with MeasurementLoop("test_nonthreaded") as msmt:
+        t0 = perf_counter()
+        for k in Sweep(range(10), 'sweep'):
+            msmt.measure(delayed_param)
+        t1 = perf_counter()
+    # Ten measurements with 0.1s delay each
+    assert t1 - t0 > 0.9
+
+    with MeasurementLoop("test_threaded") as msmt:
+        t0 = perf_counter()
+        for k in Sweep(range(10), 'sweep'):
+            msmt.measure(delayed_param, thread=True)
+        t1 = perf_counter()
+    # Ten measurements with 0.1s delay each
+    assert t1 - t0 < 0.1
+
+    msmt.dataset
+
