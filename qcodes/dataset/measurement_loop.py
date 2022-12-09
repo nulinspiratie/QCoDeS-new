@@ -11,6 +11,7 @@ from matplotlib import pyplot as plt
 
 import numpy as np
 from tqdm import tqdm
+from tqdm.notebook import tqdm as tqdm_notebook
 
 from qcodes.dataset.data_set_protocol import DataSetProtocol
 from qcodes.dataset.descriptions.detect_shapes import detect_shape_of_measurement
@@ -271,9 +272,9 @@ class _DatasetHandler:
         measurement_info["latest_value"] = result
 
     def get_result_setpoints(self, result, action_indices):
+        measurement_info = self.measurement_list[action_indices]
         # Check if result is an array
         if np.ndim(result) > 0:
-            measurement_info = self.measurement_list[action_indices]
             setpoints = []
 
             for k, setpoint_indices in enumerate(measurement_info["setpoints_action_indices"]):
@@ -717,7 +718,11 @@ class MeasurementLoop:
     def _update_progress_bar(self, action_indices, description=None, create_if_new=True):
         # Register new progress bar
         if action_indices not in self.progress_bars:
-            if create_if_new:
+            # Do not create progress bar if one already exists and it's not a widget
+            # Otherwise stdout gets spammed
+            if not isinstance(tqdm, tqdm_notebook) and self.progress_bars:
+                return
+            elif create_if_new:
                 self.progress_bars[action_indices] = tqdm(
                     total=np.prod(self.loop_shape),
                     desc=description,
@@ -1224,7 +1229,7 @@ class MeasurementLoop:
 
         self._masked_properties.append(
             {
-                "type": "attr",
+                "unmask_type": "attr",
                 "obj": obj,
                 "attr": attr,
                 "original_value": original_value,
@@ -1252,7 +1257,7 @@ class MeasurementLoop:
 
         self._masked_properties.append(
             {
-                "type": "parameter",
+                "unmask_type": "parameter",
                 "obj": param,
                 "original_value": original_value,
                 "value": value,
@@ -1280,7 +1285,7 @@ class MeasurementLoop:
 
         self._masked_properties.append(
             {
-                "type": "key",
+                "unmask_type": "key",
                 "obj": obj,
                 "key": key,
                 "original_value": original_value,
@@ -1351,6 +1356,7 @@ class MeasurementLoop:
         unmask_type: Optional[str] = None,
         value: Optional[Any] = None,
         raise_exception: bool = True,
+        remove_from_list: bool = True,
         **kwargs,  # Add kwargs because original_value may be None
     ) -> None:
         """Unmasks a previously masked object, i.e. revert value back to original
@@ -1362,6 +1368,8 @@ class MeasurementLoop:
             type: can be 'key', 'attr', 'parameter' if not explicitly provided by kwarg
             value: Optional masked value, only used for logging
             raise_exception: Whether to raise exception if unmasking fails
+            remove_from_list: Whether to remove the masked property from the list
+                msmt._masked_properties. This ensures we don't unmask twice.
         """
         if "original_value" not in kwargs:
             # No masked property passed. We collect all the masked properties
@@ -1381,7 +1389,8 @@ class MeasurementLoop:
             for unmask_property in reversed(unmask_properties):
                 self.unmask(**unmask_property)
 
-            self._masked_properties = remaining_masked_properties
+            if remove_from_list:
+                self._masked_properties = remaining_masked_properties
         else:
             # A masked property has been passed, which we unmask here
             try:
@@ -1402,6 +1411,20 @@ class MeasurementLoop:
                     obj(original_value)
                 else:
                     raise SyntaxError(f"Unmask type {unmask_type} not understood")
+
+                # Try to find masked property and remove from list
+                if remove_from_list:
+                    for masked_property in reversed(self._masked_properties):
+                        if masked_property["obj"] != obj:
+                            continue
+                        elif attr is not None and masked_property.get("attr") != attr:
+                            continue
+                        elif key is not None and masked_property.get("key") != key:
+                            continue
+                        else:
+                            self._masked_properties.remove(masked_property)
+                            break
+
             except Exception as e:
                 self.log(
                     f"Could not unmask {obj} {unmask_type} from masked value {value} "
@@ -1683,12 +1706,6 @@ class BaseSweep(AbstractSweep):
             action_indices[-1] = 0
             msmt.action_indices = tuple(action_indices)
         except StopIteration:  # Reached end of iteration
-            if self.revert:
-                if isinstance(self.sequence, SweepValues):
-                    msmt.unmask(self.sequence.parameter)
-                else:
-                    # TODO: Check what other iterators might be able to be masked
-                    pass
             self.exit_sweep()
             raise StopIteration
 
@@ -1781,6 +1798,11 @@ class BaseSweep(AbstractSweep):
     def exit_sweep(self) -> None:
         """Exits sweep, stepping out of the current `Measurement.action_indices`"""
         msmt = running_measurement()
+        if self.revert:
+            if isinstance(self.sequence, SweepValues):
+                msmt.unmask(self.sequence.parameter)
+            elif self.parameter is not None:
+                msmt.unmask(self.parameter)
         msmt.step_out(reduce_dimension=True)
 
     def execute(
@@ -2018,9 +2040,10 @@ class Sweep(BaseSweep):
         """
         if len(args) == 1:  # Sweep([1,2,3], name="name")
             if isinstance(args[0], Iterable):
-                assert (
-                    kwargs.get("name") is not None
-                ), "Must provide name if sweeping iterable"
+                if kwargs.get("name") is None:
+                    kwargs["name"] = "iteration"
+                if kwargs.get("label") is None:
+                    kwargs["label"] = "Iteration"
                 (kwargs["sequence"],) = args
             elif isinstance(args[0], _BaseParameter):
                 assert (
@@ -2163,33 +2186,6 @@ class Sweep(BaseSweep):
         return sequence
 
 
-class RepetitionSweep(BaseSweep):
-    """Basic sweep to repeat something multiple times
-    Its functionality is comparable to range(N)
-
-    Args:
-        repetitions: Number of times to loop over
-        start: Starting index
-        name: Sweep name, defaults to "repetition"
-        label: Sweep label, defaults to "Repetition"
-        unit: Optional sweep unit
-    """
-
-    def __init__(
-        self,
-        repetitions: int,
-        start: int = 0,
-        name: str = "repetition",
-        label: str = "Repetition",
-        unit: Optional[str] = None,
-    ):
-        self.start = start
-        self.repetitions = repetitions
-        sequence = start + np.arange(repetitions)
-
-        super().__init__(sequence, name, label, unit)
-
-
 def measure_sweeps(
     sweeps: List[BaseSweep],
     measure_params: List[_BaseParameter],
@@ -2217,3 +2213,52 @@ def measure_sweeps(
 
         for measure_param in measure_params:
             msmt.measure(measure_param)
+
+
+class Iterate(Sweep):
+    """Variant of Sweep that is used to iterate outside a MeasurementLoop"""
+    def __iter__(self) -> Iterable:
+        # Determine sweep parameter
+        if self.parameter is None:
+            if isinstance(self.sequence, _IterateDondSweep):
+                # sweep is a doNd sweep that already has a parameter
+                self.parameter = self.sequence.parameter
+            else:
+                # Need to create a parameter
+                self.parameter = Parameter(
+                    name=self.name, label=self.label, unit=self.unit
+                )
+
+        # We use this to revert back in the end
+        self.original_value = self.parameter.get()
+
+        self.loop_index = 0
+        self.dimension = 1
+        self.iterator = iter(self.sequence)
+
+        return self
+
+    def __next__(self) -> Any:
+        try:  # Perform loop action
+            sweep_value = next(self.iterator)
+        except StopIteration:  # Reached end of iteration
+            if self.revert:
+                try:
+                    self.parameter(self.original_value)
+                except Exception:
+                    warn(f'Could not revert {self.parameter} to {self.original_value}')
+            raise StopIteration
+
+        # Set parameter if passed along
+        if self.parameter is not None and self.parameter.settable:
+            self.parameter(sweep_value)
+
+        # Optional wait after settings value
+        if self.initial_delay and self.loop_index == 0:
+            sleep(self.initial_delay)
+        if self.delay:
+            sleep(self.delay)
+
+        self.loop_index += 1
+
+        return sweep_value
