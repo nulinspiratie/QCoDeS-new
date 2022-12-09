@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from qcodes.dataset import LinSweep, MeasurementLoop, Sweep, dond
+from qcodes.dataset import LinSweep, MeasurementLoop, Sweep, dond, Iterate
 from qcodes.instrument import ManualParameter, Parameter
 
 
@@ -52,26 +52,27 @@ def test_sweep_2_args_parameter_stop():
 
     # No initial value
     with pytest.raises(ValueError):
-        sweep = Sweep(sweep_parameter, 10)
+        sweep = Sweep(sweep_parameter, stop=10)
     with pytest.raises(ValueError):
-        sweep = Sweep(sweep_parameter, 10, num=21)
+        sweep = Sweep(sweep_parameter, stop=10, num=21)
 
     sweep_parameter(0)
     with pytest.raises(SyntaxError):
         sweep = Sweep(sweep_parameter, 10)
 
-    sweep = Sweep(sweep_parameter, 10, num=21)
+    sweep = Sweep(sweep_parameter, stop=10, num=21)
     assert np.allclose(sweep.sequence, np.linspace(0, 10, 21))
 
     sweep_parameter.sweep_defaults = {"num": 21}
-    sweep = Sweep(sweep_parameter, 10)
+    sweep = Sweep(sweep_parameter, stop=10)
     assert np.allclose(sweep.sequence, np.linspace(0, 10, 21))
 
 
 def test_sweep_2_args_sequence_name():
     sweep_values = [1, 2, 3]
-    with pytest.raises(AssertionError):
-        sweep = Sweep(sweep_values)
+    sweep = Sweep(sweep_values)
+    assert sweep.name == 'iteration'
+    assert sweep.label == 'Iteration'
 
     sweep = Sweep(sweep_values, "sweep_values")
     assert np.allclose(sweep.sequence, sweep_values)
@@ -87,8 +88,9 @@ def test_sweep_3_args_parameter_start_stop():
     assert np.allclose(sweep.sequence, np.linspace(0, 10, 21))
 
     sweep_values = [1, 2, 3]
-    with pytest.raises(AssertionError):
-        sweep = Sweep(sweep_values)
+    sweep = Sweep(sweep_values)
+    assert sweep.name == 'iteration'
+    assert sweep.label == 'Iteration'
 
     sweep = Sweep(sweep_values, "sweep_values")
     assert np.allclose(sweep.sequence, sweep_values)
@@ -181,3 +183,27 @@ def test_sweep_execute_sweep_args():
     arr = dataset.get_parameter_data("get_param")["get_param"]["get_param"]
     assert np.allclose(arr, [[2, 3, 4], [3, 4, 5], [4, 5, 6]])
     print(dataset)
+
+
+def test_sweep_reverting():
+    param = ManualParameter('param', initial_value=42)
+    with MeasurementLoop('test_revert') as msmt:
+        for val in Sweep(param, range(5), revert=True):
+            msmt.measure(val, 'value')
+
+        print(msmt._masked_properties)
+
+        assert param() == 42
+
+        param(41)
+    assert param() == 41
+
+
+def test_iterate():
+    param = ManualParameter('param', initial_value=42)
+
+    expected_vals = np.linspace(37, 47, 21)
+    for k, val in enumerate(Iterate(param, around=5, num=21)):
+        assert val == expected_vals[k]
+
+    assert param() == 42
