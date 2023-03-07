@@ -624,10 +624,13 @@ class Station(Metadatable, DelegateAttributes):
             setup_parameter_from_dict(instr.parameters[name], options)
 
         def update_monitor() -> None:
-            if ((self.use_monitor is None and get_config_use_monitor())
-                    or self.use_monitor):
-                # restart Monitor
-                Monitor(*self._monitor_parameters)
+            try:
+                if ((self.use_monitor is None and get_config_use_monitor())
+                        or self.use_monitor):
+                    # restart Monitor
+                    Monitor(*self._monitor_parameters)
+            except Exception as e:
+                warnings.warn("Couldn't start monitor: {e}")
 
         for name, options in instr_cfg.get('parameters', {}).items():
             parameter = resolve_parameter_identifier(instr, name)
